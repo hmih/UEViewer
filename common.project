@@ -68,7 +68,9 @@ CPP_STD = c++14				# allow modern C++ features
 	!endif
 
 	LIBC      = shared
-	OPTIONS   = -msse2									# enable SSE instructions
+	!if "$PLATFORM" ne "osx"
+	OPTIONS   = -msse2									# enable SSE instructions (x86 only)
+	!endif
 	OPTIONS   += -fno-strict-aliasing					# required for our uint_cast()-based FP hacks (check!! taken from my Quake2)
 	OPTIONS   += -fno-stack-protector					# this will remove GLIBC_2.4 dependency
 	OPTIONS   += {
