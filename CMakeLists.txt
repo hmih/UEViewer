@@ -5,6 +5,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #------------------------------------------------
+# Generate Shaders.h from .ush files (needed by GlWindow.cpp)
+#------------------------------------------------
+find_package(Perl REQUIRED)
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/Unreal/Shaders.h
+    COMMAND ${PERL_EXECUTABLE} Unreal/Shaders/make.pl
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating Shaders.h from .ush files"
+)
+
+#------------------------------------------------
 # Platform detection
 #------------------------------------------------
 if(APPLE)
@@ -153,6 +164,7 @@ add_executable(umodel ${UMODEL_SOURCES}
     ${IMG_LIB_SOURCES}
     ${NV_LIB_SOURCES}
     ${MOBILE_LIB_SOURCES}
+    ${CMAKE_SOURCE_DIR}/Unreal/Shaders.h
 )
 
 target_include_directories(umodel PRIVATE
