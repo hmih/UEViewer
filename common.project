@@ -65,6 +65,9 @@ CPP_STD = c++14				# allow modern C++ features
 		STDLIBS += GL
 	!else
 		CPP_STD = c++2a									# https://github.com/gildor2/UEViewer/issues/183#issuecomment-846745134
+		# Homebrew provides libpng, simde, and other libs on macOS
+		LIBINCLUDES += /opt/homebrew/include
+		LIBINCLUDES += /usr/local/include
 	!endif
 
 	LIBC      = shared

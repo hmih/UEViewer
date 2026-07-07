@@ -11,9 +11,12 @@
 
 #include "GameDefines.h"
 
+// On macOS, we build with RENDERING=1 (using SIMDE for portable SSE and OpenGL
+// framework for headers). The rendering code compiles but is never called at
+// runtime — we only use the data-only functions (GetParams, AppendReferencedTextures)
+// for material/texture export. Thread is disabled because we don't use the viewer.
 #ifdef __APPLE__
-#undef RENDERING //todo?
-#undef THREADING //todo?
+#undef THREADING
 #endif
 
 // some private games

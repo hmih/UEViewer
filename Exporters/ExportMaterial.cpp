@@ -12,6 +12,8 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 {
 	guard(ExportMaterial);
 
+#if RENDERING				// requires UUnrealMaterial::GetParams()
+
 	if (!Mat) return;
 
 	if (Mat->IsTextureCube())
@@ -25,6 +27,9 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 		ExportTexture(Mat);
 		return;
 	}
+
+	//todo: handle Mat->IsTexture(), Mat->IsTextureCube() to select exporter code
+	//todo: remove separate texture handling from Main.cpp exporter registraction
 
 	TArray<UUnrealMaterial*> AllTextures;
 	Mat->AppendReferencedTextures(AllTextures, false);
@@ -98,6 +103,8 @@ void ExportMaterial(const UUnrealMaterial* Mat)
 			ExportMaterial(Inst->Parent);
 		}
 	}
+
+#endif // RENDERING
 
 	unguardf("%s'%s'", Mat->GetClassName(), Mat->Name);
 }
