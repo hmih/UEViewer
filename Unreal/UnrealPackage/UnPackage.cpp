@@ -998,13 +998,15 @@ UObject* UnPackage::CreateExport(int index)
 	{
 		if (!IsSuppressedClass(ClassName))
 		{
-			// appPrintf("WARNING: Unknown class \"%s\" for object \"%s\"\n", ClassName, *Exp.ObjectName);
+			appPrintf("WARNING: Unknown class \"%s\" for object \"%s\"\n", ClassName, *Exp.ObjectName);
 		}
-		// Create a fallback UObject so we can process unknown types (e.g., actors)
-		Obj = (UObject*)appMalloc(sizeof(UObject));
-		new(Obj) UObject;
-		UObject::GObjObjects.Add(Obj);
-		Exp.Object = Obj;
+#if MAX_DEBUG
+		else
+		{
+			appPrintf("SUPPRESSED: %s\n", ClassName);
+		}
+#endif
+		return NULL;
 	}
 
 #if UNREAL3

@@ -26,6 +26,8 @@ bool LoadWholePackage(UnPackage* Package, IProgressCallback* progress)
 	UObject::BeginLoad();
 	for (int idx = 0; idx < Package->Summary.ExportCount; idx++)
 	{
+		if (!IsKnownClass(Package->GetClassNameFor(Package->GetExport(idx))))
+			continue;
 		if (progress && !progress->Tick()) return false;
 		Package->CreateExport(idx);
 	}
