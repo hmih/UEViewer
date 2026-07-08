@@ -380,6 +380,7 @@ FORCEINLINE void operator delete[](void* ptr)
 
 
 // C++17 (delete with alignment)
+#ifndef __APPLE__
 FORCEINLINE void operator delete(void* ptr, size_t)
 {
 	appFree(ptr);
@@ -390,6 +391,7 @@ FORCEINLINE void* operator new(size_t /*size*/, void* ptr)
 {
 	return ptr;
 }
+#endif
 
 
 #define DEFAULT_ALIGNMENT		8
