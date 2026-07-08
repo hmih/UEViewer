@@ -14,6 +14,9 @@
 #else
 #	include <dirent.h>				// for opendir() etc
 #	include <sys/stat.h>			// for stat()
+#	ifdef __APPLE__
+#		define stat64 stat			// on Darwin, stat is already 64-bit
+#	endif
 #endif
 
 

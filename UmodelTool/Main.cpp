@@ -732,6 +732,8 @@ static void TestStrings()
 	exit(0);
 }
 
+#ifndef UMODEL_LIBRARY_BUILD
+
 #define OPT_BOOL(name,var)				{ name, (byte*)&var, true  },
 #define OPT_NBOOL(name,var)				{ name, (byte*)&var, false },
 #define OPT_VALUE(name,var,value)		{ name, (byte*)&var, value },
@@ -1348,3 +1350,5 @@ int main(int argc, const char **argv)
 
 	return 0;
 }
+
+#endif // UMODEL_LIBRARY_BUILD

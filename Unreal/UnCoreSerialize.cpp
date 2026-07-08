@@ -512,6 +512,7 @@ void FArchive::Printf(const char *fmt, ...)
 	#define fopen64			fopen
 	#define fseeko64		fseeko
 	#define ftello64		ftell
+	#define stat64			stat
 
 #endif // _WIN32 / __APPLE__
 

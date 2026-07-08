@@ -52,6 +52,17 @@
 #	ifndef CONST
 #		define CONST const
 #	endif
+#else
+// Non-Windows: APIENTRY/WINAPI/CALLBACK are empty (default calling convention)
+#	ifndef APIENTRY
+#		define APIENTRY
+#	endif
+#	ifndef WINAPI
+#		define WINAPI
+#	endif
+#	ifndef CALLBACK
+#		define CALLBACK
+#	endif
 #endif // _WIN32
 
 #endif // __WIN32_TYPES_H__

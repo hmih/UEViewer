@@ -1,7 +1,14 @@
 #ifndef __MATH_SSE_H__
 #define __MATH_SSE_H__
 
+// Use native SSE intrinsics on x86; SIMDE portable fallback on other archs (arm64).
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include <xmmintrin.h>
+#else
+#define SIMDE_ENABLE_NATIVE_ALIASES
+#include <simde/x86/sse.h>
+#include <simde/x86/sse2.h>
+#endif
 
 struct CVec4
 {

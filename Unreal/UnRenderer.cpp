@@ -432,10 +432,16 @@ static bool UploadCompressedTex(UUnrealMaterial* Tex, GLenum target, GLenum targ
 		break;
 	case TPF_BC6H:
 		if (!GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION_BPTC)) return false;
+#ifndef GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB
+#define GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB 0x8E8F
+#endif
 		format = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
 		break;
 	case TPF_BC7:
 		if (!GL_SUPPORT(QGL_ARB_TEXTURE_COMPRESSION_BPTC)) return false;
+#ifndef GL_COMPRESSED_RGBA_BPTC_UNORM_ARB
+#define GL_COMPRESSED_RGBA_BPTC_UNORM_ARB 0x8E8E
+#endif
 		format = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
 		break;
 	default:
