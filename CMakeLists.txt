@@ -9,9 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #------------------------------------------------
 find_package(Perl REQUIRED)
 add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/Unreal/Shaders.h
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Unreal/Shaders.h
     COMMAND ${PERL_EXECUTABLE} Unreal/Shaders/make.pl
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating Shaders.h from .ush files"
 )
 
@@ -51,25 +51,27 @@ if(NOT APPLE)
 endif()
 
 #------------------------------------------------
-# Defines
+# Defines (propagate to consumers via umodel_lib target)
 #------------------------------------------------
-add_compile_definitions(DO_GUARD=1)
+set(UMODEL_COMPILE_DEFS DO_GUARD=1)
 
 if(UMODEL_RENDERING)
-    add_compile_definitions(RENDERING=1)
+    list(APPEND UMODEL_COMPILE_DEFS RENDERING=1)
 else()
-    add_compile_definitions(RENDERING=0)
+    list(APPEND UMODEL_COMPILE_DEFS RENDERING=0)
 endif()
 
 if(UMODEL_THREADING)
-    add_compile_definitions(THREADING=1)
+    list(APPEND UMODEL_COMPILE_DEFS THREADING=1)
 else()
-    add_compile_definitions(THREADING=0)
+    list(APPEND UMODEL_COMPILE_DEFS THREADING=0)
 endif()
 
 if(WIN32)
-    add_compile_definitions(HAS_UI=1)
+    list(APPEND UMODEL_COMPILE_DEFS HAS_UI=1)
 endif()
+
+add_compile_definitions(${UMODEL_COMPILE_DEFS})
 
 #------------------------------------------------
 # Third-party library sources (built from vendor tree)
@@ -132,7 +134,7 @@ if(UMODEL_RENDERING)
 endif()
 
 #------------------------------------------------
-# umodel binary
+# umodel_lib: static library with all UModel code (no main())
 #------------------------------------------------
 
 # Collect main source files (mirrors umodel.project sources(MAIN))
@@ -153,21 +155,34 @@ file(GLOB UMODEL_SOURCES
     UmodelTool/*.cpp
 )
 
+# umodel executable will conditionally compile main() from Main.cpp
+# (guarded by #ifndef UMODEL_LIBRARY_BUILD)
+
 if(WIN32)
     file(GLOB UMODEL_UI_SOURCES CONFIGURE_DEPENDS UI/*.cpp)
     list(APPEND UMODEL_SOURCES ${UMODEL_UI_SOURCES})
 endif()
 
-add_executable(umodel ${UMODEL_SOURCES}
+add_library(umodel_lib STATIC ${UMODEL_SOURCES}
     ${COMP_LIB_SOURCES}
     ${UE4_LIB_SOURCES}
     ${IMG_LIB_SOURCES}
     ${NV_LIB_SOURCES}
     ${MOBILE_LIB_SOURCES}
-    ${CMAKE_SOURCE_DIR}/Unreal/Shaders.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Unreal/Shaders.h
 )
 
-target_include_directories(umodel PRIVATE
+# Propagate compile definitions to consumers (e.g. tascend_importer)
+target_compile_definitions(umodel_lib PUBLIC ${UMODEL_COMPILE_DEFS})
+target_compile_definitions(umodel_lib PRIVATE UMODEL_LIBRARY_BUILD)
+
+# Propagate compile options to consumers
+target_compile_options(umodel_lib PUBLIC
+    -fno-strict-aliasing
+    -Wno-invalid-offsetof
+)
+
+target_include_directories(umodel_lib PUBLIC
     .
     Core
     Unreal
@@ -182,85 +197,39 @@ target_include_directories(umodel PRIVATE
     ${SIMDE_INCLUDE_DIR}
 )
 
-target_link_libraries(umodel PRIVATE
+target_link_libraries(umodel_lib PUBLIC
     ZLIB::ZLIB
     PNG::PNG
 )
 
 if(UMODEL_RENDERING)
-    target_link_libraries(umodel PRIVATE SDL2::SDL2)
+    target_link_libraries(umodel_lib PUBLIC SDL2::SDL2)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(umodel PRIVATE m stdc++ dl pthread)
+    target_link_libraries(umodel_lib PUBLIC m stdc++ dl pthread)
 endif()
 
 if(UMODEL_RENDERING)
     if(APPLE)
-        target_link_libraries(umodel PRIVATE "-framework OpenGL")
+        target_link_libraries(umodel_lib PUBLIC "-framework OpenGL")
     elseif(NOT WIN32)
-        target_link_libraries(umodel PRIVATE GL)
+        target_link_libraries(umodel_lib PUBLIC GL)
     endif()
 endif()
 
 #------------------------------------------------
-# extract tool (headless package extractor)
+# umodel executable (just Main.cpp + umodel_lib)
 #------------------------------------------------
-file(GLOB EXTRACT_SOURCES
-    CONFIGURE_DEPENDS
-    Tools/PackageExtract/Main.cpp
-)
-set(EXTRACT_CORE_SOURCES
-    Unreal/UnCore.cpp
-    Unreal/UnCoreCompression.cpp
-    Unreal/UnCoreDecrypt.cpp
-    Unreal/UnCoreSerialize.cpp
-    Unreal/UnObject.cpp
-    Unreal/UnObject4.cpp
-)
-file(GLOB EXTRACT_PACKAGE_SOURCES
-    CONFIGURE_DEPENDS
-    Unreal/UnrealPackage/UnPackage*.cpp
-)
-set(EXTRACT_EXTRA_SOURCES
-    Unreal/GameDatabase.cpp
-    Unreal/FileSystem/FileSystemUtils.cpp
-    Unreal/FileSystem/GameFileSystem.cpp
-    Unreal/FileSystem/GameFileSystemGears4.cpp
-    Unreal/FileSystem/IOStoreFileSystem.cpp
-    Unreal/FileSystem/UnArchivePak.cpp
-    Unreal/TypeInfo.cpp
-    Core/Core.cpp
-    Core/CoreWin32.cpp
-    Core/Memory.cpp
-)
+add_executable(umodel UmodelTool/Main.cpp)
+target_link_libraries(umodel PRIVATE umodel_lib)
 
-add_executable(extract
-    ${EXTRACT_SOURCES}
-    ${EXTRACT_CORE_SOURCES}
-    ${EXTRACT_PACKAGE_SOURCES}
-    ${EXTRACT_EXTRA_SOURCES}
-    ${COMP_LIB_SOURCES}
-    ${UE4_LIB_SOURCES}
-)
-
-target_include_directories(extract PRIVATE
-    .
-    Core
-    Unreal
-    libs
-    libs/include
-    ${SIMDE_INCLUDE_DIR}
-)
-
-target_link_libraries(extract PRIVATE
-    ZLIB::ZLIB
-    PNG::PNG
-)
-
-if(NOT WIN32)
-    target_link_libraries(extract PRIVATE m stdc++ dl pthread)
-endif()
+#------------------------------------------------
+# extract tool (headless package extractor)
+# Uses umodel_lib for all shared code.
+#------------------------------------------------
+add_executable(extract Tools/PackageExtract/Main.cpp)
+target_link_libraries(extract PRIVATE umodel_lib)
 
 #------------------------------------------------
 # Install

@@ -129,6 +129,19 @@ inline void OutOfMemory(int size)
 
 void* appMalloc(int size, int alignment, bool noInit)
 {
+#ifdef __APPLE__
+	void* ptr;
+	size_t al = (size_t)alignment;
+	if (al < sizeof(void*)) al = sizeof(void*);
+	size_t padded = ((size_t)size + al - 1) & ~(al - 1);
+	if (padded == 0) padded = al;
+	if (posix_memalign(&ptr, al, padded) != 0)
+		OutOfMemory(size);
+	if (size > 0 && !noInit) memset(ptr, 0, size);
+	InterlockedAdd(&GTotalAllocationSize, size);
+	InterlockedIncrement(&GTotalAllocationCount);
+	return ptr;
+#else
 	guard(appMalloc);
 	PROFILE_LABEL(noInit ? "NoInit" : "Zero");
 
@@ -218,10 +231,17 @@ void* appMalloc(int size, int alignment, bool noInit)
 
 	return ptr;
 	unguardf("size=%d (total=%d Mbytes)", size, (int)(GTotalAllocationSize >> 20));
+#endif
 }
 
 void* appRealloc(void* ptr, int newSize)
 {
+#ifdef __APPLE__
+	if (!ptr) return appMalloc(newSize, 8, true);
+	void* newPtr = realloc(ptr, newSize);
+	if (!newPtr) OutOfMemory(newSize);
+	return newPtr;
+#else
 	guard(appRealloc);
 
 	// special case
@@ -280,10 +300,17 @@ void* appRealloc(void* ptr, int newSize)
 	return newData;
 
 	unguard;
+#endif
 }
 
 void appFree(void* ptr)
 {
+#ifdef __APPLE__
+	free(ptr);
+	return;
+#else
+	guard(appFree);
+	assert(ptr);
 	guard(appFree);
 	assert(ptr);
 
@@ -323,6 +350,7 @@ void appFree(void* ptr)
 	free(block);
 
 	unguard;
+#endif
 }
 
 
@@ -474,6 +502,7 @@ void appDumpMemoryAllocations()
 #endif // DEBUG_MEMORY
 
 
+#if 0 // disabled: on macOS standard operator new/delete are used
 #ifdef __APPLE__
 
 void* operator new(size_t size)
@@ -496,4 +525,5 @@ void operator delete[](void* ptr)
 	appFree(ptr);
 }
 
-#endif // __APPLE__
+#endif
+#endif // disabled // __APPLE__
